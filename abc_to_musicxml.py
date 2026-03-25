@@ -9,9 +9,7 @@ def abc_to_musicxml(
     output_xml: Path | None = None,
 ) -> Path:
     """
-    Convert an ABC notation file back into MusicXML using abc2xml.py
-    that is vendored in this repository (originally from the EasyABC
-    project).
+    Using abc2xml.py (originally from the EasyABC project).
     """
     abc_path = abc_path.expanduser().resolve()
     if not abc_path.is_file():
