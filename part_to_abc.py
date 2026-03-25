@@ -9,11 +9,7 @@ def part_musicxml_to_abc(
     output_abc: Path | None = None,
 ) -> Path:
     """
-    Convert a single-part MusicXML file into ABC notation using xml2abc.py
-    from the EasyABC toolchain.
-
-    This function uses the `xml2abc.py` script that is vendored in this
-    repository (originally from the EasyABC project).
+    This function uses the `xml2abc.py` script (originally from the EasyABC project).
     """
     part_xml = part_xml.expanduser().resolve()
     if not part_xml.is_file():
@@ -32,8 +28,6 @@ def part_musicxml_to_abc(
             f"xml2abc.py not found next to this script: {xml2abc_script}"
         )
 
-    # xml2abc writes ABC to stdout by default, so capture it and write it
-    # directly into our target file.
     result = subprocess.run(
         [sys.executable, str(xml2abc_script), str(part_xml)],
         check=True,
