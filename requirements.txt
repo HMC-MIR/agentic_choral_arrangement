@@ -1,1 +1,9 @@
 music21>=9.0.0
+
+# LLM clients
+openai>=1.0
+anthropic>=0.20
+google-generativeai>=0.5
+
+# Environment / notebook utilities
+python-dotenv>=1.0
