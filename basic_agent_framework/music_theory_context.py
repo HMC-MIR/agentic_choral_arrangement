@@ -283,18 +283,28 @@ Use slash notation: V/V means "the dominant of the dominant"
 """
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Assembled context blocks: one per agent role
-# These are what get injected into each agent's system prompt.
+# Assembled context blocks for agent system prompts.
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Theory Agent context: focuses on analysis — understanding function, syntax, and phrase structure
+# Full theory reference — ALL six chapters.
+# In the hub-and-spoke architecture, only the Theory Agent (the critic) receives
+# textbook context. The Harmonizer generates from musicianship alone.
+FULL_THEORY_CONTEXT = "\n\n".join([
+    HARMONIC_FUNCTIONS,
+    HARMONIC_SYNTAX_PHRASE,
+    HARMONIC_SYNTAX_PROLONGATION,
+    CADENCE_TYPES,
+    ALTERED_SUBDOMINANT_CHORDS,
+    APPLIED_CHORDS,
+])
+
+# Legacy split contexts (kept for reference / alternative configurations)
 THEORY_AGENT_CONTEXT = "\n\n".join([
     HARMONIC_FUNCTIONS,
     HARMONIC_SYNTAX_PHRASE,
     HARMONIC_SYNTAX_PROLONGATION,
 ])
 
-# Harmonizer Agent context: focuses on generation — cadences, special chords, applied chords
 HARMONIZER_AGENT_CONTEXT = "\n\n".join([
     CADENCE_TYPES,
     ALTERED_SUBDOMINANT_CHORDS,

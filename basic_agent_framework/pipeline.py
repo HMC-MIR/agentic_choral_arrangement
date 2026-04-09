@@ -1,51 +1,45 @@
 """
 pipeline.py
 -----------
-Main entry point for the 3-agent melody harmonization pipeline.
+Hub-and-spoke orchestration loop for the 3-agent harmonization pipeline.
 
-The pipeline uses Microsoft Agent Framework's Workflow API to orchestrate
-two executors in sequence:
+The Orchestrator Agent sits at the center and mediates every exchange:
 
-  MelodyInput
-      ↓
-  TheoryExecutor (Theory Agent — Claude Sonnet 4.6)
-      Analyzes melody → produces Roman numeral harmonic analysis
-      ↓
-  HarmonizerExecutor (Harmonizer Agent — GPT-4o)
-      Takes melody + analysis → generates complete 2-voice ABC
-      ↓
-  HarmonizationResult (final_abc ready for util.load_abc())
+  ┌─────────────────────────────────────────────────────────┐
+  │                                                         │
+  │   1. Orchestrator → Harmonizer: "generate chords"       │
+  │   2. Orchestrator → Theory:     "critique these chords" │
+  │   3. Orchestrator evaluates critique → APPROVED/REVISE  │
+  │   4. If REVISE → back to step 1 with feedback           │
+  │                                                         │
+  │   Repeat up to max_iterations times                     │
+  └─────────────────────────────────────────────────────────┘
 
-After the workflow completes, an optional Orchestrator Agent (GPT-4o-mini)
-cleans up the final ABC (strips markdown fences, validates structure).
+Each agent is called via agent.run() — the Orchestrator is an LLM that makes
+the approve/revise decision, not hardcoded logic.
 
 Usage:
     import asyncio
     from basic_agent_framework import harmonize_melody, load_bach_melody
     from basic_agent_framework.bach_melodies import build_harmonization_template
 
-    melody_abc = load_bach_melody("bwv253")
-    template   = build_harmonization_template(melody_abc)
-    result     = asyncio.run(harmonize_melody(template))
+    melody  = load_bach_melody("bwv253")
+    template = build_harmonization_template(melody)
+    result   = asyncio.run(harmonize_melody(template))
 
-    print(result.analysis)   # Roman numeral analysis from Theory Agent
-    print(result.final_abc)  # Complete 2-voice ABC with chords
+    print(result.final_abc)          # 2-voice ABC with chords
+    for it in result.iterations:     # inspect each round
+        print(f"Round {it.attempt}: {'APPROVED' if it.approved else 'REVISE'}")
 """
 
 import re
 
-from agent_framework import WorkflowBuilder
-
-from .executors import TheoryExecutor, HarmonizerExecutor, MelodyInput, HarmonizationResult
-from .agents import create_orchestrator_agent
+from .agents import create_orchestrator_agent, create_theory_agent, create_harmonizer_agent
+from .executors import Iteration, HarmonizationResult
 
 
 def _strip_markdown_fences(text: str) -> str:
-    """Remove ```abc ... ``` or ``` ... ``` fences that LLMs sometimes add.
-
-    Even with explicit instructions not to use fences, LLMs occasionally
-    wrap their output in markdown code blocks. This removes those wrappers.
-    """
+    """Remove ```abc ... ``` or ``` ... ``` fences that LLMs sometimes add."""
     text = re.sub(r"^```[a-zA-Z]*\n?", "", text.strip(), flags=re.MULTILINE)
     text = re.sub(r"^```\s*$", "", text.strip(), flags=re.MULTILINE)
     return text.strip()
@@ -54,66 +48,117 @@ def _strip_markdown_fences(text: str) -> str:
 async def harmonize_melody(
     melody_abc: str,
     *,
-    clean_with_orchestrator: bool = True,
+    max_iterations: int = 3,
+    verbose: bool = True,
 ) -> HarmonizationResult:
-    """Run the full 3-agent harmonization pipeline on a 2-voice ABC template.
+    """Run the hub-and-spoke harmonization pipeline.
 
-    Pipeline steps:
-      1. TheoryExecutor   → harmonic analysis (Roman numerals, cadence labels)
-      2. HarmonizerExecutor → final 2-voice ABC with chord progression in V:2
-      3. (Optional) OrchestratorAgent → final cleanup of ABC formatting
+    The Orchestrator coordinates a loop between the Harmonizer and Theory agents:
+      1. Harmonizer generates (or revises) V:2 chords
+      2. Theory Agent critiques the result
+      3. Orchestrator reads the critique and decides APPROVED or REVISE
+      4. If REVISE, the Orchestrator distills actionable feedback and sends
+         it back to the Harmonizer for the next iteration
 
     Args:
-        melody_abc:               A 2-voice ABC template string (V:1 = melody,
-                                  V:2 = rests). Use build_harmonization_template()
-                                  from bach_melodies.py to generate this.
-        clean_with_orchestrator:  If True (default), run a final cleanup pass
-                                  using the Orchestrator Agent to strip any
-                                  stray markdown and validate the ABC.
+        melody_abc:      A 2-voice ABC template (V:1 = melody, V:2 = rests).
+                         Use build_harmonization_template() to generate this.
+        max_iterations:  Maximum number of generate→critique→decide rounds.
+                         The pipeline stops early if the Orchestrator approves.
+        verbose:         If True, print status messages during execution.
 
     Returns:
-        A HarmonizationResult with:
-          - melody_abc:  The original template (unchanged)
-          - analysis:    The Theory Agent's Roman numeral analysis
-          - final_abc:   Complete, clean 2-voice ABC ready for util.load_abc()
+        HarmonizationResult with the full iteration history and final ABC.
     """
-    # ── Step 1 & 2: Build and run the workflow ────────────────────────────────
-    # Create fresh executor instances for each run (stateless — no shared state)
-    theory_executor = TheoryExecutor()
-    harmonizer_executor = HarmonizerExecutor()
+    # Create the three agents
+    orchestrator = create_orchestrator_agent()
+    theory = create_theory_agent()
+    harmonizer = create_harmonizer_agent()
 
-    # Connect them sequentially: theory → harmonizer
-    workflow = (
-        WorkflowBuilder(start_executor=theory_executor)
-        .add_edge(theory_executor, harmonizer_executor)
-        .build()
-    )
+    iterations: list[Iteration] = []
+    current_abc = ""
+    previous_feedback = ""
 
-    # Run the workflow with the melody template as input
-    run_result = await workflow.run(MelodyInput(melody_abc=melody_abc))
+    for i in range(1, max_iterations + 1):
 
-    # Extract the HarmonizationResult yielded by HarmonizerExecutor
-    outputs = run_result.get_outputs()
-    result: HarmonizationResult = outputs[0]
+        # ── Step 1: Harmonizer generates or revises ───────────────────────────
+        if i == 1:
+            if verbose:
+                print(f"  [{i}/{max_iterations}] Harmonizer: generating initial chords...")
+            harmonizer_prompt = (
+                "Generate a chord progression for this melody. Replace the rests "
+                "in V:2 with block chords.\n\n"
+                f"{melody_abc}"
+            )
+        else:
+            if verbose:
+                print(f"  [{i}/{max_iterations}] Harmonizer: revising based on feedback...")
+            harmonizer_prompt = (
+                "Revise your harmonization based on this feedback.\n\n"
+                f"## Original melody template\n{melody_abc}\n\n"
+                f"## Your previous harmonization\n{current_abc}\n\n"
+                f"## Feedback to address\n{previous_feedback}"
+            )
 
-    # ── Step 3 (optional): Orchestrator cleanup pass ──────────────────────────
-    if clean_with_orchestrator:
-        # First do a quick local strip of markdown fences
-        cleaned_abc = _strip_markdown_fences(result.final_abc)
+        harmonizer_response = await harmonizer.run(harmonizer_prompt)
+        current_abc = _strip_markdown_fences(harmonizer_response.text)
 
-        # Then ask the Orchestrator Agent to validate and clean up
-        orchestrator = create_orchestrator_agent()
-        cleanup_response = await orchestrator.run(
-            f"Clean and validate this ABC notation:\n\n{cleaned_abc}"
+        # ── Step 2: Theory Agent critiques ────────────────────────────────────
+        if verbose:
+            print(f"  [{i}/{max_iterations}] Theory Agent: critiquing harmonization...")
+
+        theory_prompt = (
+            "Critique this harmonization of a Bach chorale melody. "
+            "The key is given in the K: field. Analyze the V:2 chords against "
+            "the V:1 melody.\n\n"
+            f"{current_abc}"
         )
-        final_abc = _strip_markdown_fences(cleanup_response.text)
-    else:
-        # Just do the local strip without an extra LLM call
-        final_abc = _strip_markdown_fences(result.final_abc)
 
-    # Return the complete result with the cleaned ABC
+        theory_response = await theory.run(theory_prompt)
+        critique = theory_response.text
+
+        # ── Step 3: Orchestrator evaluates ────────────────────────────────────
+        if verbose:
+            print(f"  [{i}/{max_iterations}] Orchestrator: evaluating critique...")
+
+        orchestrator_prompt = (
+            f"This is iteration {i} of {max_iterations}.\n\n"
+            f"## Current harmonization (from Harmonizer)\n{current_abc}\n\n"
+            f"## Critique (from Theory Expert)\n{critique}\n\n"
+            "Read the critique and decide: is this harmonization good enough, "
+            "or should the Harmonizer revise it?"
+        )
+
+        orchestrator_response = await orchestrator.run(orchestrator_prompt)
+        decision = orchestrator_response.text
+        approved = "APPROVED" in decision.upper()
+
+        # Record this iteration
+        iterations.append(Iteration(
+            attempt=i,
+            harmonization=current_abc,
+            critique=critique,
+            decision=decision,
+            approved=approved,
+        ))
+
+        if approved:
+            if verbose:
+                print(f"  [{i}/{max_iterations}] APPROVED")
+            break
+
+        if verbose:
+            print(f"  [{i}/{max_iterations}] REVISE — sending feedback to Harmonizer")
+
+        # Extract the Orchestrator's distilled feedback for the Harmonizer
+        previous_feedback = decision
+
+    # ── Return final result ───────────────────────────────────────────────────
+    if verbose and not iterations[-1].approved:
+        print(f"  Max iterations ({max_iterations}) reached — using last attempt")
+
     return HarmonizationResult(
-        melody_abc=result.melody_abc,
-        analysis=result.analysis,
-        final_abc=final_abc,
+        melody_abc=melody_abc,
+        iterations=iterations,
+        final_abc=current_abc,
     )

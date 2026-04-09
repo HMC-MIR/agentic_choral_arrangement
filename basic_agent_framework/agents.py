@@ -1,75 +1,144 @@
 """
 agents.py
 ---------
-Factory functions for creating the three agents in the harmonization pipeline.
+Factory functions for the three agents in the hub-and-spoke harmonization pipeline.
 
-Each agent is backed by a different LLM, making the model choice transparent
-and easy to change. System prompts embed relevant Open Music Theory chapters
-for in-context learning.
+Each agent has a distinct, non-overlapping role:
 
-Agents:
-  - Theory Agent    (Claude Sonnet 4.6)  — analyzes melody, produces Roman numeral analysis
-  - Harmonizer Agent (GPT-4o)            — generates ABC chord progression from analysis
-  - Orchestrator Agent (GPT-4o-mini)     — cleans up and validates the final ABC output
+  Orchestrator (GPT-4o)   — Coordinator. Routes messages between agents, evaluates
+                             critique severity, decides whether to approve or request
+                             another revision. Has NO music theory context.
 
-Dependencies:
-  pip install agent-framework agent-framework-openai agent-framework-anthropic --pre
+  Theory Agent (Claude)   — Critic. Has ALL Open Music Theory textbook context.
+                             Analyzes a harmonization against the melody and produces
+                             structured feedback. NEVER generates ABC notation.
+
+  Harmonizer (GPT-4o)     — Generator. Has NO textbook context — just a skilled
+                             musician who knows ABC notation. Generates and revises
+                             V:2 chord progressions based on feedback.
 """
 
 from agent_framework import Agent
 from agent_framework.openai import OpenAIChatCompletionClient
 from agent_framework.anthropic import AnthropicClient
 
-from .music_theory_context import THEORY_AGENT_CONTEXT, HARMONIZER_AGENT_CONTEXT
+from .music_theory_context import FULL_THEORY_CONTEXT
 
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Orchestrator — the hub
+# ──────────────────────────────────────────────────────────────────────────────
+
+def create_orchestrator_agent(model: str = "gpt-4o") -> Agent:
+    """Create the Orchestrator Agent.
+
+    The Orchestrator is the central coordinator. It reads the Theory Agent's
+    critique and decides whether the harmonization is acceptable or needs
+    revision. It provides targeted guidance to the Harmonizer when requesting
+    revisions.
+
+    The Orchestrator has NO music theory context — it relies on the Theory
+    Agent's expertise and acts purely as a project manager.
+    """
+    system_prompt = """\
+You are the coordinator of a music harmonization team. You manage two specialists:
+  - A Theory Expert who critiques harmonizations (but never writes music)
+  - A Harmonizer who generates chord progressions (but has no theory textbook)
+
+Your job is to read the Theory Expert's critique of the Harmonizer's work and
+make a clear decision.
+
+## Decision: APPROVED or REVISE
+
+After reading the critique, output one of two decisions:
+
+**If the harmonization is acceptable** (minor issues only, or no issues):
+
+    DECISION: APPROVED
+    Summary: <one sentence explaining why it's good enough>
+
+**If the harmonization needs revision** (significant issues):
+
+    DECISION: REVISE
+    Priority issues (most important first):
+    1. <specific issue and what to change>
+    2. <specific issue and what to change>
+    3. <specific issue and what to change>
+
+## Guidelines for your decision
+- A harmonization does NOT need to be perfect — "good enough" is fine
+- If the Theory Expert only flags minor voice-leading issues, APPROVE
+- If there are wrong chords, missing cadences, or mismatched bar counts, REVISE
+- If the ABC notation has syntax errors (won't parse), always REVISE
+- On later iterations, be more lenient — diminishing returns on revision
+- Distill the Theory Expert's feedback into 2-3 actionable, specific items
+  for the Harmonizer — don't just forward the entire critique
+- NEVER write ABC notation yourself — just coordinate
+"""
+
+    return OpenAIChatCompletionClient(model=model).as_agent(
+        name="OrchestratorAgent",
+        instructions=system_prompt,
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Theory Agent — the critic (has ALL textbook context)
+# ──────────────────────────────────────────────────────────────────────────────
 
 def create_theory_agent(model: str = "claude-sonnet-4-6") -> Agent:
-    """Create the Theory Agent backed by Claude.
+    """Create the Theory Agent.
 
-    This agent receives a melody in ABC notation and produces a structured,
-    measure-by-measure harmonic analysis using Roman numerals and functional labels.
-    Its system prompt is grounded in Open Music Theory chapters on harmonic
-    functions, the idealized phrase, and prolongation.
+    The Theory Agent is a pure critic grounded in Open Music Theory textbook
+    content. It receives a melody + harmonization and produces structured
+    feedback identifying issues and suggesting corrections.
 
-    Args:
-        model: Anthropic model name. Defaults to claude-sonnet-4-6.
-
-    Returns:
-        An Agent ready to analyze melodies.
+    It has ALL six OMT chapters and NEVER generates ABC notation.
     """
     system_prompt = f"""\
-You are an expert music theorist specializing in Bach chorales and common-practice harmony.
+You are a music theory expert and critic specializing in Bach chorales and
+common-practice harmony. You have deep knowledge of the following topics:
 
-Your task: analyze a melody in ABC notation and produce a clear, measure-by-measure
-harmonic analysis using Roman numerals.
+{FULL_THEORY_CONTEXT}
+
+## Your Role
+You are a CRITIC, not a composer. You analyze harmonizations and provide
+detailed, actionable feedback. You NEVER write ABC notation or generate music.
+
+## How to Critique
+Given a melody (V:1) and a chord progression (V:2) in ABC notation:
+
+1. **Identify the key** from the K: field in the ABC header
+2. **Analyze measure by measure**: for each bar, determine what chord the V:2
+   notes spell and whether it fits the melody
+3. **Check harmonic function**: does the progression follow T → S → D → T?
+   Are there any backward motions (D → S)?
+4. **Check cadences**: do phrase endings use appropriate cadence types (PAC, HC, etc.)?
+5. **Check voice leading**: parallel fifths/octaves between V:1 and V:2?
+   Are tendency tones resolved correctly (leading tone up, seventh down)?
+6. **Check rhythm**: do V:2 bar lengths match V:1? Does each bar sum correctly?
+7. **Check notation**: are the ABC note names correct for the key?
 
 ## Output Format
-For each measure, write one line:
-  Measure N: <chord> (<function>) [→ <chord> (<function>)]  [CADENCE TYPE if applicable]
+Structure your critique as:
 
-Where:
-  - <chord> is a Roman numeral with figured bass (e.g., I, V7, ii6, vii°6)
-  - <function> is T (tonic), S (subdominant/pre-dominant), or D (dominant)
-  - [→] separates multiple chords within a measure (if harmonic rhythm allows)
-  - Cadence types: PAC, IAC, HC, DC, PC (only at phrase endings)
+    KEY: <identified key>
+    OVERALL: <one-sentence summary — good/acceptable/needs work>
 
-## Example Output
-  Measure 1: I (T) → V6 (D) → I6 (T)
-  Measure 2: IV (S) → ii6 (S) → V7 (D)
-  Measure 3: I (T) [PAC]
-  Measure 4: I (T) → V/V (D) → V (D) [HC]
+    MEASURE-BY-MEASURE:
+    Measure 1: <V:2 chord spelling> — <assessment>
+    Measure 2: <V:2 chord spelling> — <assessment or issue>
+    ...
 
-## Music Theory Reference
-Use the following Open Music Theory chapters as your guide:
+    ISSUES (most severe first):
+    1. [SEVERITY: major/minor] <description and suggested fix>
+    2. [SEVERITY: major/minor] <description and suggested fix>
+    ...
 
-{THEORY_AGENT_CONTEXT}
+    VERDICT: ACCEPTABLE / NEEDS REVISION
 
-## Rules
-- Stick to the key signature given in the ABC header (K: field)
-- Base your analysis on the melody's scale degrees to infer implied harmony
-- Consider melodic contour: a leaping melody often outlines a chord
-- Identify phrase endings and label cadences
-- Keep your analysis concise — one line per measure
+If the harmonization is solid overall with only minor issues, say ACCEPTABLE.
+If there are wrong chords, broken voice leading, or structural problems, say NEEDS REVISION.
 """
 
     return AnthropicClient(model=model).as_agent(
@@ -78,97 +147,59 @@ Use the following Open Music Theory chapters as your guide:
     )
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Harmonizer — the generator (no textbook context)
+# ──────────────────────────────────────────────────────────────────────────────
+
 def create_harmonizer_agent(model: str = "gpt-4o") -> Agent:
-    """Create the Harmonizer Agent backed by GPT-4o.
+    """Create the Harmonizer Agent.
 
-    This agent takes the original melody (ABC notation) plus the Theory Agent's
-    Roman numeral analysis, then generates a complete 2-voice ABC score with a
-    chord progression in V:2. The output must be immediately parseable by abc2midi.
-
-    Args:
-        model: OpenAI model name. Defaults to gpt-4o.
-
-    Returns:
-        An Agent ready to generate ABC chord progressions.
+    The Harmonizer is a skilled musician who generates chord progressions in
+    ABC notation. It has NO music theory textbook context — it relies on its
+    training data and musical intuition, plus feedback from the Theory Agent
+    (relayed through the Orchestrator).
     """
-    system_prompt = f"""\
-You are an expert Bach chorale harmonizer. Your job is to generate a chord
-progression as a second voice (V:2) in ABC notation, given:
-  1. A melody in V:1 (ABC notation)
-  2. A harmonic analysis from a music theory expert
+    system_prompt = """\
+You are a skilled musician who harmonizes melodies by writing chord progressions
+in ABC notation. You work by ear and instinct — you don't have a theory textbook,
+but you know what sounds good in the style of Bach chorales.
 
-## Critical Output Rules
-1. Return ONLY the complete, valid ABC notation — no explanation, no markdown
-   fences (no ```), no prose before or after.
-2. Keep all header fields (X, T, M, L, Q, K, V declarations, %%MIDI lines)
-   exactly as given. Do NOT change the tempo (Q:).
-3. Keep Voice 1 (V:1) exactly as given — do not alter any note, rest, or rhythm.
-4. Replace every rest in Voice 2 (V:2) with block chords that match the harmonic
-   analysis. Use the chord inversion and rhythm that fits the time signature.
-5. V:2 MUST have exactly the same number of bars as V:1.
-6. The note values in each V:2 bar must sum to exactly one bar of the given
-   time signature.
-7. The output must parse correctly with abc2midi.
-8. Do not add extra voices, lyrics, or new header fields.
+## Your Task
+Given a melody template with V:1 (melody) and V:2 (rests), replace the rests
+in V:2 with block chords that harmonize the melody. When given feedback from
+a theory expert, revise your chords accordingly.
 
-## Voice Format (CRITICAL)
-Use the V:n header style where each voice's notes appear directly below its
-V: declaration. Do NOT use [V:n] inline markers. Structure:
+## ABC Notation Rules (you MUST follow these exactly)
+1. Return ONLY the complete ABC notation — no explanation, no markdown fences,
+   no prose before or after.
+2. Keep all header fields (X, T, M, L, K, V, %%MIDI) exactly as given.
+3. Keep V:1 exactly as given — never alter the melody.
+4. V:2 must have exactly the same number of bars as V:1.
+5. Each V:2 bar's note values must sum to exactly one bar in the time signature.
+6. Use the V:n header style (not [V:n] inline markers):
 
-  V:1 name="Melody" clef=treble
-  %%MIDI program 1 40
-  <melody notes unchanged>
-  V:2 name="Chords" clef=treble
-  %%MIDI program 2 0
-  <your chords here>
+   V:1 name="Melody" clef=treble
+   %%MIDI program 1 40
+   <melody unchanged>
+   V:2 name="Chords" clef=treble
+   %%MIDI program 2 0
+   <your chords>
 
-## Chord Voicing in ABC Notation
-In ABC, a block chord is written with brackets: [CEG] = C major triad.
-  - Use uppercase for notes in the 4th octave (middle C = C)
-  - Use lowercase for notes in the 5th octave (c = C5)
-  - Example 4/4 bar: [A,CE] [CEG] [EGc] [CEG] |  (four quarter-note chords)
-  - Example with dotted rhythms: [A,CE]3/2 [DF A] / |
+## ABC Chord Syntax
+Block chords use square brackets: [CEG] = C major triad.
+  - Uppercase = octave 4 (middle C = C)
+  - Lowercase = octave 5 (c = C5)
+  - Comma suffix = octave down (C, = C3)
+  - Apostrophe = octave up (c' = C6)
+  - Example bar (4/4, L:1/4): [A,CE] [CEA] [DFA] [EG B] |
 
-## Music Theory Reference
-Use the following chapters to select appropriate chord types and cadence formulas:
-
-{HARMONIZER_AGENT_CONTEXT}
+## When Revising
+When you receive feedback, make ONLY the changes requested. Don't rewrite
+everything from scratch — fix the specific measures and issues mentioned.
+Keep what was working well.
 """
 
     return OpenAIChatCompletionClient(model=model).as_agent(
         name="HarmonizerAgent",
-        instructions=system_prompt,
-    )
-
-
-def create_orchestrator_agent(model: str = "gpt-4o-mini") -> Agent:
-    """Create the Orchestrator Agent backed by GPT-4o-mini.
-
-    This lightweight agent performs a final cleanup pass on the ABC output:
-    strips any accidental markdown fences, validates basic structure, and
-    returns clean ABC text.
-
-    Args:
-        model: OpenAI model name. Defaults to gpt-4o-mini.
-
-    Returns:
-        An Agent ready to clean up ABC notation strings.
-    """
-    system_prompt = """\
-You are an ABC notation validator and cleaner.
-
-Your task: given a piece of ABC notation, ensure it is clean and well-formed.
-
-Rules:
-  1. Remove any markdown code fences (``` or ```abc) if present.
-  2. Ensure the ABC starts with X: and ends with |] on the last bar.
-  3. Do not change any notes, rhythms, or musical content.
-  4. Return ONLY the raw ABC text — no explanation, no extra lines.
-
-If the input is already clean, return it unchanged.
-"""
-
-    return OpenAIChatCompletionClient(model=model).as_agent(
-        name="OrchestratorAgent",
         instructions=system_prompt,
     )

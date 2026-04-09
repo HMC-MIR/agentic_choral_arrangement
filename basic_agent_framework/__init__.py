@@ -1,33 +1,35 @@
 """
 basic_agent_framework
 ---------------------
-A 3-agent melody harmonization framework built on Microsoft Agent Framework.
+A 3-agent melody harmonization system built on Microsoft Agent Framework,
+using a hub-and-spoke architecture:
 
-The pipeline takes a Bach chorale melody in ABC notation and uses three
-specialized LLM agents to generate a chord progression:
-
-  1. Theory Agent    (Claude Sonnet 4.6)  — Roman numeral harmonic analysis
-  2. Harmonizer Agent (GPT-4o)            — generates ABC V:2 chord progression
-  3. Orchestrator Agent (GPT-4o-mini)     — validates and cleans final ABC output
+  Orchestrator (GPT-4o)  — coordinates the loop, decides approve/revise
+  Theory Agent (Claude)  — critiques with full OMT textbook context
+  Harmonizer   (GPT-4o)  — generates/revises ABC chords, no textbook
 
 Quick start:
     import asyncio
-    from basic_agent_framework import harmonize_melody
-    from basic_agent_framework.bach_melodies import (
-        load_bach_melody, build_harmonization_template, clean_abc_for_llm
+    from basic_agent_framework import (
+        harmonize_melody, load_bach_melody,
+        build_harmonization_template, clean_abc_for_llm,
     )
 
-    melody_abc = load_bach_melody("bwv253")
-    template   = build_harmonization_template(melody_abc)
-    clean      = clean_abc_for_llm(template)
+    melody   = load_bach_melody("bwv253")
+    template = build_harmonization_template(melody)
+    clean    = clean_abc_for_llm(template)
 
     result = asyncio.run(harmonize_melody(clean))
-    print(result.analysis)    # Roman numeral analysis
+
+    # Inspect every iteration
+    for it in result.iterations:
+        print(f"Round {it.attempt}: {'APPROVED' if it.approved else 'REVISE'}")
+
     print(result.final_abc)   # 2-voice ABC with chord progression
 """
 
 from .pipeline import harmonize_melody
-from .executors import MelodyInput, TheoryAnalysis, HarmonizationResult
+from .executors import Iteration, HarmonizationResult
 from .bach_melodies import (
     load_bach_melody,
     build_harmonization_template,
@@ -38,9 +40,8 @@ from .bach_melodies import (
 __all__ = [
     # Main pipeline entry point
     "harmonize_melody",
-    # Message types (useful for type hints and inspection)
-    "MelodyInput",
-    "TheoryAnalysis",
+    # Message types
+    "Iteration",
     "HarmonizationResult",
     # Bach melody utilities
     "load_bach_melody",
