@@ -70,7 +70,7 @@ print(result.final_abc)
 
 ### Run the Notebook
 
-Open `basic_agent_framework/demo.ipynb` using the **Python (mir)** Jupyter
+Open `basic_agent_framework/experiment_less_prompt/experiment_less_prompt.ipynb` using the **Python (mir)** Jupyter
 kernel for a step-by-step walkthrough with audio playback.
 
 ---
@@ -242,7 +242,9 @@ basic_agent_framework/
 ├── agents.py                   # Agent factory functions (one per role)
 ├── executors.py                # Pydantic message types (Iteration, HarmonizationResult)
 ├── pipeline.py                 # Hub-and-spoke orchestration loop
-├── demo.ipynb                  # Interactive notebook with audio playback
+├── experiment_less_prompt/
+│   ├── experiment_less_prompt.ipynb  # Interactive notebook (minimal-prompt pipeline)
+│   └── prompt_only_framework.py
 └── GUIDE.md                    # This file
 ```
 
@@ -318,20 +320,11 @@ Three utilities for preparing Bach melodies (unchanged from before):
 - `build_harmonization_template(abc)` -- single-voice → 2-voice template
 - `clean_abc_for_llm(abc)` -- strip lyrics, fermatas, linebreak markers
 
-### `demo.ipynb`
+### `experiment_less_prompt/experiment_less_prompt.ipynb`
 
-An 8-cell notebook:
-
-| Cell | Content |
-|------|---------|
-| 1 | Setup: imports, API keys, SoundFont |
-| 2 | Load BWV 253 soprano, print cleaned ABC |
-| 3 | Play raw melody audio |
-| 4 | Run `harmonize_melody()` with verbose output |
-| 5 | Inspect each iteration (ABC, critique, decision) with unified diffs |
-| 6 | Display final 2-voice ABC |
-| 7 | Sonify and play final result (melody only, melody + chords, chords only) |
-| 8 | Compare all iterations: per-round unified diff + three audio players (melody + chords, melody only, chords only) |
+Interactive walkthrough (merged with the latest `aidan` demo): load melody, play audio, run
+`harmonize_melody_prompt_only()`, inspect iterations, sonify, and compare rounds. Setup uses
+`ANTHROPIC_API_KEY` only (all three agents are Claude in this variant).
 
 ---
 
