@@ -320,7 +320,7 @@ Three utilities for preparing Bach melodies (unchanged from before):
 
 ### `demo.ipynb`
 
-A 9-cell notebook:
+An 8-cell notebook:
 
 | Cell | Content |
 |------|---------|
@@ -328,11 +328,10 @@ A 9-cell notebook:
 | 2 | Load BWV 253 soprano, print cleaned ABC |
 | 3 | Play raw melody audio |
 | 4 | Run `harmonize_melody()` with verbose output |
-| 5 | Inspect each iteration (ABC, critique, decision) |
+| 5 | Inspect each iteration (ABC, critique, decision) with unified diffs |
 | 6 | Display final 2-voice ABC |
-| 7 | Sonify and play (melody + chords, chords only) |
-| 8 | Compare iteration 1 vs final (audio A/B test) |
-| 9 | Run a second BWV for comparison |
+| 7 | Sonify and play final result (melody only, melody + chords, chords only) |
+| 8 | Compare all iterations: per-round unified diff + three audio players (melody + chords, melody only, chords only) |
 
 ---
 

@@ -297,16 +297,3 @@ FULL_THEORY_CONTEXT = "\n\n".join([
     ALTERED_SUBDOMINANT_CHORDS,
     APPLIED_CHORDS,
 ])
-
-# Legacy split contexts (kept for reference / alternative configurations)
-THEORY_AGENT_CONTEXT = "\n\n".join([
-    HARMONIC_FUNCTIONS,
-    HARMONIC_SYNTAX_PHRASE,
-    HARMONIC_SYNTAX_PROLONGATION,
-])
-
-HARMONIZER_AGENT_CONTEXT = "\n\n".join([
-    CADENCE_TYPES,
-    ALTERED_SUBDOMINANT_CHORDS,
-    APPLIED_CHORDS,
-])

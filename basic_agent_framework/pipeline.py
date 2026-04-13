@@ -50,6 +50,9 @@ async def harmonize_melody(
     *,
     max_iterations: int = 3,
     verbose: bool = True,
+    orchestrator_model: str = "gpt-4o",
+    theory_model: str = "claude-sonnet-4-6",
+    harmonizer_model: str = "gpt-4o",
 ) -> HarmonizationResult:
     """Run the hub-and-spoke harmonization pipeline.
 
@@ -61,19 +64,22 @@ async def harmonize_melody(
          it back to the Harmonizer for the next iteration
 
     Args:
-        melody_abc:      A 2-voice ABC template (V:1 = melody, V:2 = rests).
-                         Use build_harmonization_template() to generate this.
-        max_iterations:  Maximum number of generate→critique→decide rounds.
-                         The pipeline stops early if the Orchestrator approves.
-        verbose:         If True, print status messages during execution.
+        melody_abc:          A 2-voice ABC template (V:1 = melody, V:2 = rests).
+                             Use build_harmonization_template() to generate this.
+        max_iterations:      Maximum number of generate→critique→decide rounds.
+                             The pipeline stops early if the Orchestrator approves.
+        verbose:             If True, print status messages during execution.
+        orchestrator_model:  Model for the Orchestrator agent (OpenAI).
+        theory_model:        Model for the Theory agent (Anthropic).
+        harmonizer_model:    Model for the Harmonizer agent (OpenAI).
 
     Returns:
         HarmonizationResult with the full iteration history and final ABC.
     """
     # Create the three agents
-    orchestrator = create_orchestrator_agent()
-    theory = create_theory_agent()
-    harmonizer = create_harmonizer_agent()
+    orchestrator = create_orchestrator_agent(model=orchestrator_model)
+    theory = create_theory_agent(model=theory_model)
+    harmonizer = create_harmonizer_agent(model=harmonizer_model)
 
     iterations: list[Iteration] = []
     current_abc = ""

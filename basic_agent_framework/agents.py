@@ -199,7 +199,7 @@ everything from scratch — fix the specific measures and issues mentioned.
 Keep what was working well.
 """
 
-    return OpenAIChatCompletionClient(model=model).as_agent(
+    return AnthropicClient(model=model).as_agent(
         name="HarmonizerAgent",
         instructions=system_prompt,
     )

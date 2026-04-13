@@ -3,7 +3,7 @@
 This project is a Music Information Retrieval (MIR) toolkit built around two main goals:
 
 1. **Sonification** — Loading, inspecting, selecting, and synthesizing ABC / MIDI music.
-2. **Generation** — Multi-agent LLM-driven text-to-music composition (ComposerX).
+2. **Generation** — Multi-agent LLM-driven melody harmonization and text-to-music composition.
 
 ---
 
@@ -18,7 +18,12 @@ This project is a Music Information Retrieval (MIR) toolkit built around two mai
   - [util/extraction.py](#utilextractionpy)
   - [util/\_\_init\_\_.py](#util__init__py)
 - [Notebooks](#notebooks)
-- [ComposerX](#composerx)
+- [Basic Agent Framework](#basic-agent-framework)
+  - [Hub-and-Spoke Architecture](#hub-and-spoke-architecture)
+  - [Agent Roles and Models](#agent-roles-and-models)
+  - [The Orchestration Loop](#the-orchestration-loop)
+  - [In-Context Learning with Open Music Theory](#in-context-learning-with-open-music-theory)
+- [ComposerX (Legacy)](#composerx-legacy)
   - [Music Generation Pipeline](#music-generation-pipeline)
   - [Evaluation Metrics](#evaluation-metrics)
 - [Legacy Code (`old/`)](#legacy-code-old)
@@ -41,7 +46,17 @@ mir_agentic_arrangement/
 │   ├── abc2xml.py               # EasyABC converter (vendored, ABC → MusicXML)
 │   └── xml2abc.py               # EasyABC converter (vendored, MusicXML → ABC)
 │
-├── ComposerX/                   # Multi-agent music generation system
+├── basic_agent_framework/       # 3-agent melody harmonization (hub-and-spoke)
+│   ├── __init__.py              # Public API exports
+│   ├── agents.py                # Agent factory functions (Orchestrator, Theory, Harmonizer)
+│   ├── pipeline.py              # Hub-and-spoke orchestration loop
+│   ├── executors.py             # Pydantic message types (Iteration, HarmonizationResult)
+│   ├── music_theory_context.py  # Open Music Theory textbook chapters as string constants
+│   ├── bach_melodies.py         # music21 corpus → ABC template pipeline
+│   ├── demo.ipynb               # Interactive notebook with audio playback
+│   └── GUIDE.md                 # Detailed guide for this module
+│
+├── ComposerX/                   # Legacy multi-agent music generation (AutoGen-based)
 │   ├── music_generation/
 │   │   ├── multi_agent_pipe.py      # Top-level orchestration script
 │   │   ├── multi_agent_groupchat.py # AutoGen agent group chat
@@ -510,9 +525,107 @@ from util import midi_sonify as ms
 
 ---
 
-## ComposerX
+## Basic Agent Framework
 
-A multi-agent text-to-music generation system. Given a natural-language prompt, a
+A 3-agent melody harmonization system built on
+[Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/),
+using a **hub-and-spoke** architecture with iterative refinement. Given a Bach
+chorale soprano melody in ABC notation, the pipeline produces a two-voice score
+with a chord progression.
+
+> For the full walkthrough see [`basic_agent_framework/GUIDE.md`](basic_agent_framework/GUIDE.md).
+
+### Hub-and-Spoke Architecture
+
+An Orchestrator agent coordinates an iterative loop between a Harmonizer (who
+generates chords) and a Theory critic (who evaluates them against Open Music
+Theory textbook knowledge). The Harmonizer and Theory Agent **never talk to
+each other directly** — every message passes through the Orchestrator.
+
+```
+                 ┌──────────────────────┐
+                 │    Orchestrator      │
+                 │    (GPT-4o)          │
+                 │    decides: APPROVE  │
+                 │    or REVISE         │
+                 └───┬──────────────┬───┘
+                     │              │
+            generate/│              │critique
+             revise  │              │
+                     ▼              ▼
+           ┌──────────────┐  ┌──────────────┐
+           │  Harmonizer  │  │  Theory      │
+           │  (GPT-4o)    │  │  (Claude)    │
+           │              │  │              │
+           │  Generates   │  │  Critiques   │
+           │  ABC chords  │  │  w/ OMT ctx  │
+           │  No textbook │  │  No music gen│
+           └──────────────┘  └──────────────┘
+```
+
+### Agent Roles and Models
+
+| Agent | Default Model | Provider | Role |
+|-------|---------------|----------|------|
+| Orchestrator | GPT-4o | OpenAI | Coordinator — routes messages, decides approve/revise |
+| Theory Agent | Claude Sonnet 4.6 | Anthropic | Critic — has all 6 OMT chapters, never generates music |
+| Harmonizer | GPT-4o | OpenAI | Generator — writes ABC chords, no textbook context |
+
+Each agent is created by a factory function in `agents.py` that accepts a `model`
+parameter, making it easy to swap models per role.
+
+### The Orchestration Loop
+
+The pipeline runs up to `max_iterations` rounds (default 3):
+
+1. **Harmonizer** generates (or revises) V:2 chords
+2. **Theory Agent** critiques the result against textbook rules
+3. **Orchestrator** reads the critique and decides APPROVED or REVISE
+4. If REVISE, distilled feedback goes back to the Harmonizer
+
+Each iteration is recorded as an `Iteration` Pydantic model. The full history
+is returned in `HarmonizationResult.iterations`.
+
+### In-Context Learning with Open Music Theory
+
+The Theory Agent receives ~4,000 words of curated excerpts from
+[Open Music Theory](https://openmusictheory.github.io/) covering harmonic
+functions, phrase syntax, prolongation, cadence types, altered subdominants,
+and applied chords. The Harmonizer gets **none** of this — it operates on
+musicianship alone, improving through the feedback loop.
+
+### Quick Start
+
+```python
+import asyncio
+from basic_agent_framework import (
+    harmonize_melody, load_bach_melody,
+    build_harmonization_template, clean_abc_for_llm,
+)
+
+melody   = load_bach_melody("bwv253", measures=(1, 8))
+template = build_harmonization_template(melody, title_override="BWV 253")
+clean    = clean_abc_for_llm(template)
+result   = asyncio.run(harmonize_melody(clean, max_iterations=3))
+
+for it in result.iterations:
+    print(f"Round {it.attempt}: {'APPROVED' if it.approved else 'REVISE'}")
+print(result.final_abc)
+```
+
+### Dependencies
+
+```bash
+pip install agent-framework agent-framework-openai agent-framework-anthropic --pre
+```
+
+Both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` must be set (via `.env` at project root).
+
+---
+
+## ComposerX (Legacy)
+
+A legacy multi-agent text-to-music generation system built on AutoGen. Given a natural-language prompt, a
 group of LLM agents collaborates to compose an original piece in ABC notation, which
 is then converted to audio.
 
@@ -737,7 +850,37 @@ score = load_abc(soprano_abc)
 audio = synthesize(score)
 ```
 
-### 5. Generate music with ComposerX
+### 5. Harmonize a Bach melody with the agent pipeline
+
+```python
+import asyncio
+from basic_agent_framework import (
+    harmonize_melody, load_bach_melody,
+    build_harmonization_template, clean_abc_for_llm,
+)
+from util import abc_sonify as abc
+import tempfile, pathlib
+
+# Load and prepare a Bach soprano melody
+melody   = load_bach_melody("bwv253", measures=(1, 8))
+template = build_harmonization_template(melody, title_override="BWV 253")
+clean    = clean_abc_for_llm(template)
+
+# Run the 3-agent pipeline
+result   = asyncio.run(harmonize_melody(clean, max_iterations=3))
+
+# Sonify the result
+with tempfile.NamedTemporaryFile(mode="w", suffix=".abc", delete=False) as f:
+    f.write(result.final_abc)
+    tmp = pathlib.Path(f.name)
+
+score = abc.load_abc(tmp)
+audio, sr = abc.sonify_parts(score, [0, 1], sf2_path="data/soundfonts/GeneralUser_GS.sf2")
+abc.write_wav("output/bwv253_harmonized.wav", audio, sr)
+tmp.unlink()
+```
+
+### 6. Generate music with ComposerX (legacy)
 
 ```bash
 cd ComposerX/music_generation
@@ -751,7 +894,7 @@ Output directory will contain:
 - `{title}.abc` — generated ABC notation
 - `{title}.wav` — synthesized audio (if MuseScore is installed)
 
-### 6. Evaluate generated MIDI files
+### 7. Evaluate generated MIDI files
 
 ```bash
 python ComposerX/eval/metrics/metrics.py \
