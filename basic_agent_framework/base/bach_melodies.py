@@ -13,8 +13,8 @@ import sys
 import pathlib
 import tempfile
 
-# Allow importing util from the project root
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+# Allow importing util from the project root (two levels up: base/ → basic_agent_framework/ → project root)
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent))
 
 from music21 import corpus, stream as m21stream
 from util.conversion import part_musicxml_to_abc
