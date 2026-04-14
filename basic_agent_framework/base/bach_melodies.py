@@ -164,8 +164,10 @@ def build_harmonization_template(single_voice_abc: str, title_override: str | No
     rest_units = numerator * l_denom // denominator
     rest_per_bar = f"z{rest_units}"
 
-    # Count bars in the melody body to generate matching V:2 rests
-    num_bars = max(1, len(re.findall(r"\|", body)))
+    # Count bars in the melody body to generate matching V:2 rests.
+    # Exclude lyric lines (w:) — their | characters are word separators, not barlines.
+    music_lines = [l for l in body_lines if not re.match(r"^\s*w:", l)]
+    num_bars = max(1, len(re.findall(r"\|", "\n".join(music_lines))))
     v2_body = " | ".join([rest_per_bar] * num_bars) + " |]"
 
     # Assemble the final 2-voice ABC string
