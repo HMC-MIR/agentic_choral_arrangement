@@ -70,7 +70,126 @@ def load_bach_melody(bwv: str = "bwv253", measures: tuple[int, int] = (1, 8)) ->
     finally:
         tmp_xml_path.unlink(missing_ok=True)
 
-    return single_voice_abc
+    return _collapse_spurious_barlines(single_voice_abc)
+
+
+# Matches a single note token: optional accidental, pitch letter or rest, octave marks,
+# optional integer numerator, optional /denominator. Used to sum beats in a bar.
+_NOTE_TOKEN = re.compile(r"[\^_=]?[A-Ga-gz][,']*(\d*)(/\d*)?")
+
+
+def _bar_beats(segment: str) -> float:
+    """Sum the note/rest durations in one bar segment, in units of L:.
+
+    Strips decorations (!fermata! etc.), bar-number comments, and the $
+    line-break marker before counting. Chords `[abc]` are not expected in
+    V:1 (single-voice soprano melody) and would overcount if present —
+    which is fine here because we only call this on pre-harmonization V:1.
+    """
+    t = re.sub(r"%\d+", "", segment)
+    t = re.sub(r"![^!]+!", "", t)
+    t = t.replace("$", "")
+    total = 0.0
+    for m in _NOTE_TOKEN.finditer(t):
+        n = int(m.group(1)) if m.group(1) else 1
+        denom = m.group(2)
+        if denom:
+            d_str = denom[1:]
+            d = int(d_str) if d_str else 2
+            total += n / d
+        else:
+            total += n
+    return total
+
+
+def _collapse_spurious_barlines(raw_abc: str) -> str:
+    """Merge adjacent V:1 bars that each fall short of a full measure but
+    whose durations sum to exactly one.
+
+    music21's MusicXML→ABC export inserts an extra barline at fermata /
+    phrase boundaries, splitting a single real measure into two pseudo-bars
+    (e.g. `| !fermata!A3 |$ c |` for one 4/4 bar of A3 + c). The template
+    builder then counts barlines and over-estimates the bar count, which
+    makes V:2 have more z-rests than V:1 has real measures.
+
+    The rule is principled, not chorale-specific: two adjacent bars that are
+    each < one full measure and sum to exactly one full measure are, by
+    construction, one real measure that was split. Drop the barline between.
+    """
+    lines = raw_abc.splitlines()
+
+    m_line = next((l for l in lines if re.match(r"^\s*M:", l)), "M:4/4")
+    mm = re.search(r"(\d+)/(\d+)", m_line)
+    numerator = int(mm.group(1)) if mm else 4
+    denominator = int(mm.group(2)) if mm else 4
+
+    l_line = next((l for l in lines if re.match(r"^\s*L:", l)), "L:1/4")
+    lm = re.search(r"1/(\d+)", l_line)
+    l_denom = int(lm.group(1)) if lm else 4
+
+    full_bar = numerator * l_denom / denominator  # bar length in L: units
+
+    # Locate V:1 body: lines after K:, before any V:2 declaration.
+    past_k = False
+    body_start = body_end = None
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if past_k and body_start is None:
+            body_start = i
+        if re.match(r"^K:", s, re.I):
+            past_k = True
+        if body_start is not None and body_end is None:
+            if re.match(r"^(V:2|\[V:2)", s):
+                body_end = i
+                break
+    if body_start is None:
+        return raw_abc
+    if body_end is None:
+        body_end = len(lines)
+
+    # Music lines inside the V:1 body (skip lyrics, voice markers, directives).
+    music_indices = [
+        i for i in range(body_start, body_end)
+        if lines[i].strip()
+        and not re.match(r"^(w:|V:|%%MIDI|I:|\[V:)", lines[i].strip())
+    ]
+    if not music_indices:
+        return raw_abc
+
+    music_text = " ".join(lines[i] for i in music_indices)
+    segments = re.split(r"\|", music_text)
+
+    merged: list[str] = []
+    i = 0
+    while i < len(segments):
+        if i + 1 < len(segments):
+            a = _bar_beats(segments[i])
+            b = _bar_beats(segments[i + 1])
+            if 0 < a < full_bar and 0 < b < full_bar and abs(a + b - full_bar) < 1e-6:
+                merged.append(f"{segments[i].rstrip()} {segments[i + 1].lstrip()}")
+                i += 2
+                continue
+        merged.append(segments[i])
+        i += 1
+
+    new_body = "|".join(merged)
+
+    # Rewrite: keep header (pre-body) and trailing (V:2 onward) lines as-is;
+    # replace the original V:1 music lines with the merged single-line body.
+    # Preserve lyric/directive lines that were interleaved.
+    new_lines = list(lines[:body_start])
+    music_inserted = False
+    for i in range(body_start, body_end):
+        s = lines[i].strip()
+        is_music = bool(s) and not re.match(r"^(w:|V:|%%MIDI|I:|\[V:)", s)
+        if is_music:
+            if not music_inserted:
+                new_lines.append(new_body)
+                music_inserted = True
+        else:
+            new_lines.append(lines[i])
+    new_lines.extend(lines[body_end:])
+    return "\n".join(new_lines)
 
 
 def clean_abc_for_llm(abc_str: str) -> str:
@@ -100,7 +219,11 @@ def clean_abc_for_llm(abc_str: str) -> str:
     return "\n".join(cleaned_lines)
 
 
-def build_harmonization_template(single_voice_abc: str, title_override: str | None = None) -> str:
+def build_harmonization_template(
+    single_voice_abc: str,
+    title_override: str | None = None,
+    num_bars: int | None = None,
+) -> str:
     """Transform a single-voice ABC string into a 2-voice harmonization template.
 
     Creates:
@@ -110,14 +233,14 @@ def build_harmonization_template(single_voice_abc: str, title_override: str | No
     The output uses the V:n header style (not [V:n] inline), which abc2midi
     requires to place both voices simultaneously starting at time 0.
 
-    This is an exact replication of _build_two_voice_abc() from llm_benchmark.ipynb.
-
     Args:
         single_voice_abc: A single-voice ABC string (as returned by load_bach_melody).
         title_override:   Optional new title for the T: field.
-
-    Returns:
-        A 2-voice ABC string with V:1 containing the melody and V:2 all rests.
+        num_bars:         Optional explicit number of bars for V:2. If omitted,
+                          falls back to counting `|` barlines in the body — which
+                          is fragile when phantom fermata-barlines or repeat
+                          markers appear. Pass the music21-derived bar count for
+                          a guaranteed-correct V:2 length.
     """
     lines = single_voice_abc.strip().splitlines()
 
@@ -164,10 +287,14 @@ def build_harmonization_template(single_voice_abc: str, title_override: str | No
     rest_units = numerator * l_denom // denominator
     rest_per_bar = f"z{rest_units}"
 
-    # Count bars in the melody body to generate matching V:2 rests.
-    # Exclude lyric lines (w:) — their | characters are word separators, not barlines.
-    music_lines = [l for l in body_lines if not re.match(r"^\s*w:", l)]
-    num_bars = max(1, len(re.findall(r"\|", "\n".join(music_lines))))
+    # Determine V:2 bar count. Prefer an explicit num_bars from the caller
+    # (e.g. derived from music21's Measure objects); otherwise fall back to
+    # counting `|` barlines in the body. Exclude lyric lines (w:) — their |
+    # characters are word separators, not barlines.
+    if num_bars is None:
+        music_lines = [l for l in body_lines if not re.match(r"^\s*w:", l)]
+        num_bars = max(1, len(re.findall(r"\|", "\n".join(music_lines))))
+    num_bars = max(1, int(num_bars))
     v2_body = " | ".join([rest_per_bar] * num_bars) + " |]"
 
     # Assemble the final 2-voice ABC string

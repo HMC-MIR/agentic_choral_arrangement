@@ -219,7 +219,11 @@ def clean_abc_for_llm(abc_str: str) -> str:
     return "\n".join(cleaned_lines)
 
 
-def build_harmonization_template(single_voice_abc: str, title_override: str | None = None) -> str:
+def build_harmonization_template(
+    single_voice_abc: str,
+    title_override: str | None = None,
+    num_bars: int | None = None,
+) -> str:
     """Transform a single-voice ABC string into a 2-voice harmonization template.
 
     Creates:
@@ -229,14 +233,14 @@ def build_harmonization_template(single_voice_abc: str, title_override: str | No
     The output uses the V:n header style (not [V:n] inline), which abc2midi
     requires to place both voices simultaneously starting at time 0.
 
-    This is an exact replication of _build_two_voice_abc() from llm_benchmark.ipynb.
-
     Args:
         single_voice_abc: A single-voice ABC string (as returned by load_bach_melody).
         title_override:   Optional new title for the T: field.
-
-    Returns:
-        A 2-voice ABC string with V:1 containing the melody and V:2 all rests.
+        num_bars:         Optional explicit number of bars for V:2. If omitted,
+                          falls back to counting `|` barlines in the body — which
+                          is fragile when phantom fermata-barlines or repeat
+                          markers appear. Pass the music21-derived bar count for
+                          a guaranteed-correct V:2 length.
     """
     lines = single_voice_abc.strip().splitlines()
 
@@ -283,10 +287,14 @@ def build_harmonization_template(single_voice_abc: str, title_override: str | No
     rest_units = numerator * l_denom // denominator
     rest_per_bar = f"z{rest_units}"
 
-    # Count bars in the melody body to generate matching V:2 rests.
-    # Exclude lyric lines (w:) — their | characters are word separators, not barlines.
-    music_lines = [l for l in body_lines if not re.match(r"^\s*w:", l)]
-    num_bars = max(1, len(re.findall(r"\|", "\n".join(music_lines))))
+    # Determine V:2 bar count. Prefer an explicit num_bars from the caller
+    # (e.g. derived from music21's Measure objects); otherwise fall back to
+    # counting `|` barlines in the body. Exclude lyric lines (w:) — their |
+    # characters are word separators, not barlines.
+    if num_bars is None:
+        music_lines = [l for l in body_lines if not re.match(r"^\s*w:", l)]
+        num_bars = max(1, len(re.findall(r"\|", "\n".join(music_lines))))
+    num_bars = max(1, int(num_bars))
     v2_body = " | ".join([rest_per_bar] * num_bars) + " |]"
 
     # Assemble the final 2-voice ABC string
