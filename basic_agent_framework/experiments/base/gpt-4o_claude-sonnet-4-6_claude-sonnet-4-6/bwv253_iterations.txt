@@ -1,0 +1,77 @@
+# Harmonization Log — bwv253
+# Experiment:    base
+# Orchestrator:  gpt-4o
+# Theory:        claude-sonnet-4-6
+# Harmonizer:    claude-sonnet-4-6
+# Iterations:    3
+
+================================================================================
+ITERATION 1 — REVISE
+================================================================================
+
+--- ABC ---
+X:1
+T:BWV253 Soprano
+C:Music21
+L:1/4
+M:4/4
+K:A
+V:1 name="Melody" clef=treble
+%%MIDI program 1 40
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+V:2 name="Chords" clef=treble
+%%MIDI program 2 0
+[A,EA] [A,EA] [A,EA] [A,CE] | [E,EG] [A,EA] [F,FA] [A,EA] | [E,EG] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 [A,EA] | [E,EG] [A,EA] [A,CE] [F,=CF] | [E,EG] [A,CE] [E,EG] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 |]
+
+================================================================================
+ITERATION 2 — REVISE
+================================================================================
+
+--- ABC ---
+X:1
+T:BWV253 Soprano
+C:Music21
+L:1/4
+M:4/4
+K:A
+V:1 name="Melody" clef=treble
+%%MIDI program 1 40
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+V:2 name="Chords" clef=treble
+%%MIDI program 2 0
+[A,EA] [A,EA] [A,EA] [A,CE] | [E,EG] [A,EA] [F,=CA] [A,EA] | [E,EG] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 [A,EA] | [E,EG] [A,EA] [A,CE] [F,=CF] | [E,EG] [A,CE] [E,EG] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 |]
+
+================================================================================
+ITERATION 3 — REVISE
+================================================================================
+
+--- ABC ---
+X:1
+T:BWV253 Soprano
+C:Music21
+L:1/4
+M:4/4
+K:A
+V:1 name="Melody" clef=treble
+%%MIDI program 1 40
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+V:2 name="Chords" clef=treble
+%%MIDI program 2 0
+[A,EA] [A,EA] [A,EA] [A,CE] | [E,E^G] [A,EA] [F,DA] [A,EA] | [E,E^G] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 [A,EA] | [E,E^G] [A,EA] [A,CE] [F,CA] | [E,E^G] [A,CE] [E,E^G] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 |]
+
+================================================================================
+FINAL ABC
+================================================================================
+
+X:1
+T:BWV253 Soprano
+C:Music21
+L:1/4
+M:4/4
+K:A
+V:1 name="Melody" clef=treble
+%%MIDI program 1 40
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+V:2 name="Chords" clef=treble
+%%MIDI program 2 0
+[A,EA] [A,EA] [A,EA] [A,CE] | [E,E^G] [A,EA] [F,DA] [A,EA] | [E,E^G] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 [A,EA] | [E,E^G] [A,EA] [A,CE] [F,CA] | [E,E^G] [A,CE] [E,E^G] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 |]

@@ -11,10 +11,10 @@ ITERATION 1 — REVISE
 
 --- Harmonizer reasoning ---
 Key:     A major
-Phrases: ends bar 4, bar 8
-Cadences: bar 4 half cadence on E; bar 8 authentic cadence I (A)
-Arc:     phrase 1: I–IV–V–I–V; phrase 2: I–IV–ii–V–I
-Notes:   voicing kept below melody throughout
+Phrases: phrase 1 ends bar 4, phrase 2 ends bar 5, phrase 3 ends bar 9, phrase 4 ends bar 10
+Cadences: bar 4 HC on E, bar 5 AC on A, bar 9 HC on E, bar 10 PAC on A
+Arc:     I–IV–V–I / I–V–I / I–IV–V–I / I–V–I
+Notes:   Melody in A major; use smooth voice leading, avoid V:2 exceeding V:1 pitch
 
 --- ABC ---
 X:1
@@ -25,10 +25,10 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ |
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,CE] [A,CE] [A,CE] [A,CE] | [E,^GB,] [A,CE] [F,Ad] [A,CE] | [E,^GB,] [A,CE] [A,CE] [E,^GB,] | [A,CE] [A,CE] [E,^GB,] [E,^GB,] | [A,CE] [A,CE] [A,CE] [A,CE] | [E,^GB,] [A,CE] [A,CE] [A,DF] | [E,^GB,] [A,CE] [E,^GB,] [A,CE] | [A,CE] [A,CE] [A,CE] [E,^GB,] |]
+[A,EA] [A,Ec] [A,EA] [A,CE] | [EAB] [EAc] [FAd] [EAc] | [EGB] [CEA] [CEA] [EGB] | [EAc] [EAc] [EGB] [EGB] | [CEA] [CEA] [CEA] [EAc] | [EGB] [EAc] [CEA] [A,CF] | [EGB] [CEA] [EGB] [EAc] | [CEA] [CEA] [CEA] [EGB] | [EAc] [EAc] [EGB] [EGB] | [CEA] [CEA] [CEA] |]
 
 ================================================================================
 ITERATION 2 — REVISE
@@ -36,21 +36,12 @@ ITERATION 2 — REVISE
 
 --- Harmonizer reasoning ---
 Key:     A major
-Phrases: m4, m8
-Cadences: m4 half cadence on V; m8 perfect authentic cadence I
-Arc:     m1–4: I–vi–ii–V; m5–8: I–IV–ii6–V–I with passing harmonies
-Notes:   Use dotted rhythms in m3 to match melody's A3/2 B/ rhythm
+Phrases: bars 1-5 (ends bar 5), bars 6-10 (ends bar 10)
+Cadences: bar 5 half cadence on E (V), bar 10 perfect authentic cadence I (A)
+Arc:     phrase 1: I–V–vi–ii–V–I; phrase 2: I–vi–IV–V–I–V–I
+Notes:   Add more ii, IV, vi chords; fix ambiguous EAB; clear V-I cadences
 
 --- ABC ---
-<reasoning>
-Key:     A major
-Phrases: m4, m8
-Cadences: m4 half cadence on V; m8 perfect authentic cadence I
-Arc:     m1–4: I–vi–ii–V; m5–8: I–IV–ii6–V–I with passing harmonies
-Notes:   Use dotted rhythms in m3 to match melody's A3/2 B/ rhythm
-</reasoning>
-
-<abc>
 X:1
 T:BWV253 Soprano
 C:Music21
@@ -59,21 +50,21 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ |
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,CE] [A,CE] [CEA] [A,CE] | [E,^GB,] [A,CE] [FAd] [E,^GB,] | [E,^GB,] [A,CE] [A,CE]3/2 [E,^GB,]/ | [A,CE] [FAd] [E,^GB,] [E,^GB,] | [A,CE] [A,CE] [CEA] [A,CE] | [E,^GB,] [A,CE] [DFA] [DFA] | [E,^GB,] [CEA] [E,^GB,] [A,CE] | [DFA] [CEA] [A,CE]3/2 [E,^GB,]/ |]
+[A,EA] [A,Ec] [A,CE] [A,CE] | [DFA] [EAc] [DFA] [EAc] | [EGB] [CEA] [CEA] [EGB] | [EAc] [DFA] [EGB] [EGB] | [CEA] [CEA] [EGB] [EGB] | [EGB] [EAc] [CEA] [DFA] | [EGB] [CEA] [EGB] [EAc] | [CEA] [CEA] [CEA] [EGB] | [EAc] [DFA] [EGB] [EGB] | [CEA] [CEA] [A,EA] |]
 
 ================================================================================
-ITERATION 3 — APPROVED
+ITERATION 3 — REVISE
 ================================================================================
 
 --- Harmonizer reasoning ---
 Key:     A major
-Phrases: m4, m8
-Cadences: m4 half cadence V; m8 perfect authentic cadence I
-Arc:     m1–4: I–V–I–ii–V; m5–8: I–IV–V–I with smooth voice leading
-Notes:   Fix m2 to I–V–I–V; fix m4 to avoid maj7 clash on C# by using V or I; smooth V approach into m4
+Phrases: bars 1-5, bars 6-10
+Cadences: bar 5 = half cadence on V; bar 10 = authentic cadence I
+Arc:     I–IV–V–I–V / V–I–V–I–I
+Notes:   Fix m2 EAc→EGB (true V); smooth voice leading throughout
 
 --- ABC ---
 X:1
@@ -84,10 +75,10 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ |
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,CE] [A,CE] [CEA] [A,CE] | [E,^GB,] [A,CE] [E,^GB,] [E,^GB,] | [E,^GB,] [A,CE] [A,CE]3/2 [E,^GB,]/ | [A,CE] [A,CE] [E,^GB,] [E,^GB,] | [A,CE] [A,CE] [CEA] [A,CE] | [E,^GB,] [A,CE] [DFA] [DFA] | [E,^GB,] [CEA] [E,^GB,] [A,CE] | [DFA] [CEA] [A,CE]3/2 [E,^GB,]/ |]
+[A,EA] [A,Ec] [A,CE] [A,CE] | [DFA] [EGB] [DFA] [EGB] | [EGB] [CEA] [CEA] [EGB] | [EAc] [DFA] [EGB] [EGB] | [CEA] [CEA] [EGB] [EGB] | [EGB] [EAc] [CEA] [DFA] | [EGB] [CEA] [EGB] [EAc] | [CEA] [CEA] [CEA] [EGB] | [EAc] [DFA] [EGB] [EGB] | [CEA] [CEA] [A,EA] |]
 
 ================================================================================
 FINAL ABC
@@ -101,7 +92,7 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ |
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,CE] [A,CE] [CEA] [A,CE] | [E,^GB,] [A,CE] [E,^GB,] [E,^GB,] | [E,^GB,] [A,CE] [A,CE]3/2 [E,^GB,]/ | [A,CE] [A,CE] [E,^GB,] [E,^GB,] | [A,CE] [A,CE] [CEA] [A,CE] | [E,^GB,] [A,CE] [DFA] [DFA] | [E,^GB,] [CEA] [E,^GB,] [A,CE] | [DFA] [CEA] [A,CE]3/2 [E,^GB,]/ |]
+[A,EA] [A,Ec] [A,CE] [A,CE] | [DFA] [EGB] [DFA] [EGB] | [EGB] [CEA] [CEA] [EGB] | [EAc] [DFA] [EGB] [EGB] | [CEA] [CEA] [EGB] [EGB] | [EGB] [EAc] [CEA] [DFA] | [EGB] [CEA] [EGB] [EAc] | [CEA] [CEA] [CEA] [EGB] | [EAc] [DFA] [EGB] [EGB] | [CEA] [CEA] [A,EA] |]
