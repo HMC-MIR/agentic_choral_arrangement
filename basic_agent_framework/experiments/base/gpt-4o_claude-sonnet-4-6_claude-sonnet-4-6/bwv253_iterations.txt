@@ -18,10 +18,21 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |] 
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,EA] [A,EA] [A,EA] [A,CE] | [E,EG] [A,EA] [F,FA] [A,EA] | [E,EG] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 [A,EA] | [E,EG] [A,EA] [A,CE] [F,=CF] | [E,EG] [A,CE] [E,EG] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 |]
+[A,EA] [A,EA] [A,EA] [CEA] | [EGB] [EAc] [FAd] [EAc] | [DFA] [CEA] [CEA]3/2 [DGB]/ | [EAc] [EAc] [DGB] [DGB] | [CEA]3 [EAc] | [DGB] [EAc] [CEA] [A,CF] | [DGB] [CEA] [DGB] [EAc] | [CEA] [CEA] [CEA]3/2 [DGB]/ | [EAc] [EAc] [DGB] [DGB] | [CEA]3 |]
+
+--- Metrics ---
+  doubled_leading_tone       0
+  unresolved_leading_tone    2
+  parallel_fifth_octave      2
+  ctnctr                     0.342
+  pcs                        0.308
+  mctd                       1.079
+  cadence_score              0.250
+  diatonic_coverage          1.000
+  bigram_typicality          0.562
 
 ================================================================================
 ITERATION 2 — REVISE
@@ -36,10 +47,21 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |] 
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,EA] [A,EA] [A,EA] [A,CE] | [E,EG] [A,EA] [F,=CA] [A,EA] | [E,EG] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 [A,EA] | [E,EG] [A,EA] [A,CE] [F,=CF] | [E,EG] [A,CE] [E,EG] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,EG]/ | [A,EA] [A,EA] [E,EG] [E,EG] | [A,CE]3 |]
+[A,EA] [A,EA] [A,EA] [CEA] | [EGB] [EAc] [FAd] [EAc] | [DFA] [CEA] [CEA]3/2 [DGB]/ | [EAc] [EAc] [DGB] [DGB] | [CEA]3 [EAc] | [DGB] [EAc] [CEA] [A,CF] | [DGB] [CEA] [DGB] [EAc] | [CEA] [CEA] [CEA]3/2 [DGB]/ | [EAc] [EAc] [DGB] [DGB] | [CEA]3 |]
+
+--- Metrics ---
+  doubled_leading_tone       0
+  unresolved_leading_tone    2
+  parallel_fifth_octave      2
+  ctnctr                     0.342
+  pcs                        0.308
+  mctd                       1.079
+  cadence_score              0.250
+  diatonic_coverage          1.000
+  bigram_typicality          0.562
 
 ================================================================================
 ITERATION 3 — REVISE
@@ -54,10 +76,21 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |] 
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,EA] [A,EA] [A,EA] [A,CE] | [E,E^G] [A,EA] [F,DA] [A,EA] | [E,E^G] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 [A,EA] | [E,E^G] [A,EA] [A,CE] [F,CA] | [E,E^G] [A,CE] [E,E^G] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 |]
+[A,EA] [A,EA] [A,EA] [CEA] | [EGB] [EAc] [FAd] [EAc] | [DFA] [CEA] [CEA]3/2 [EGB]/ | [EAc] [FAd] [EGB] [EGB] | [CEA]3 [EAc] | [EGB] [EAc] [CEA] [A,CF] | [EGB] [CEA] [EGB] [EAc] | [CEA] [DFA] [CEA]3/2 [EGB]/ | [EAc] [FAd] [EGB] [EGB] | [CEA]3 |]
+
+--- Metrics ---
+  doubled_leading_tone       0
+  unresolved_leading_tone    2
+  parallel_fifth_octave      2
+  ctnctr                     0.342
+  pcs                        0.371
+  mctd                       1.184
+  cadence_score              0.800
+  diatonic_coverage          1.000
+  bigram_typicality          0.818
 
 ================================================================================
 FINAL ABC
@@ -71,7 +104,15 @@ M:4/4
 K:A
 V:1 name="Melody" clef=treble
 %%MIDI program 1 40
- c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |]
+ c/d/ e c A | B c d c | B A A3/2 B/ | c c B/A/ B | A3  c | B c A F | B A B c | A A A3/2 B/ | c c B/A/ B | A3 |] 
 V:2 name="Chords" clef=treble
 %%MIDI program 2 0
-[A,EA] [A,EA] [A,EA] [A,CE] | [E,E^G] [A,EA] [F,DA] [A,EA] | [E,E^G] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 [A,EA] | [E,E^G] [A,EA] [A,CE] [F,CA] | [E,E^G] [A,CE] [E,E^G] [A,EA] | [A,CE] [A,CE] [A,CE]3/2 [E,E^G]/ | [A,EA] [A,EA] [E,E^G] [E,E^G] | [A,CE]3 |]
+[A,EA] [A,EA] [A,EA] [CEA] | [EGB] [EAc] [FAd] [EAc] | [DFA] [CEA] [CEA]3/2 [EGB]/ | [EAc] [FAd] [EGB] [EGB] | [CEA]3 [EAc] | [EGB] [EAc] [CEA] [A,CF] | [EGB] [CEA] [EGB] [EAc] | [CEA] [DFA] [CEA]3/2 [EGB]/ | [EAc] [FAd] [EGB] [EGB] | [CEA]3 |]
+
+================================================================================
+PIPELINE SUMMARY
+================================================================================
+
+  approve_rate               0.000
+  avg_rounds_to_approve      3
+  n_iterations               3
