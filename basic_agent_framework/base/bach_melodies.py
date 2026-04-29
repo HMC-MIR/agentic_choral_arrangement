@@ -212,8 +212,11 @@ def clean_abc_for_llm(abc_str: str) -> str:
         line = line.replace("$", "")
         # Remove !fermata! and similar decoration markers
         line = re.sub(r"![a-zA-Z]+!", "", line)
-        # Remove trailing %N bar-number comments (e.g. "| %7")
-        line = re.sub(r"\s*%\d+\s*$", "", line)
+        # Remove %N bar-number comments anywhere on the line (e.g. "| %7  B A").
+        # Must strip mid-line, not just trailing: the soprano body is a single
+        # long line with all bars on it, and a stray `%7` mid-line would
+        # comment out every subsequent bar (everything after `%` to EOL).
+        line = re.sub(r"\s*%\d+\s*", " ", line)
         if line.strip():
             cleaned_lines.append(line)
     return "\n".join(cleaned_lines)

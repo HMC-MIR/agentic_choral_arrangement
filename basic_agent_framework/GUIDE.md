@@ -58,8 +58,8 @@ from basic_agent_framework import (
     build_harmonization_template, clean_abc_for_llm,
 )
 
-melody   = load_bach_melody("bwv253", measures=(1, 8))
-template = build_harmonization_template(melody, title_override="BWV 253")
+melody   = load_bach_melody("bwv253", measures=(1, 10))
+template = build_harmonization_template(melody, title_override="BWV 253", num_bars=10)
 clean    = clean_abc_for_llm(template)
 result   = asyncio.run(harmonize_melody(clean, max_iterations=3))
 
@@ -448,7 +448,7 @@ music21.corpus.parse("bach/bwv253")
 bach.parts[0]  (soprano)
     │
     ▼
-soprano.measures(1, 8)  (first 8 measures)
+soprano.measures(1, 10)  (full chorale body, 10 bars; pickup at bar 0 excluded)
     │
     ▼
 write("musicxml")  →  temp .musicxml file
@@ -600,7 +600,7 @@ the project root with `python-dotenv`.
 ### Timeout on large excerpts
 
 With 3 agents and up to 3 iterations, the pipeline may take 30-60 seconds
-for 8 measures. Use `verbose=True` (the default) to see progress. For faster
+for 10 measures. Use `verbose=True` (the default) to see progress. For faster
 iteration during development, use `max_iterations=1` or fewer measures.
 
 ### Missing music21 corpus data

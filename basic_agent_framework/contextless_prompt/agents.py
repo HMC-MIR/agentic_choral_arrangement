@@ -9,7 +9,10 @@ long markdown-section framing used in ``pipeline.py``.
 
 Same orchestration graph as ``pipeline.harmonize_melody``; only prompts differ.
 
-All three roles use **Anthropic** (``ANTHROPIC_API_KEY`` in ``.env``) — no OpenAI client.
+Client routing matches the other experiments: Orchestrator and Harmonizer use
+OpenAI (``OPENAI_API_KEY``); Theory uses Anthropic (``ANTHROPIC_API_KEY``).
+Only the prompts differ from ``base`` — this variant has *no* injected music
+theory context and uses terse system/user messages.
 
 Usage::
 
@@ -26,11 +29,13 @@ Usage::
 import re
 
 from agent_framework import Agent
+from agent_framework.openai import OpenAIChatCompletionClient
 from agent_framework.anthropic import AnthropicClient
 
 _DEFAULT_CLAUDE = "claude-sonnet-4-6"
+_DEFAULT_GPT = "gpt-4o"
 
-from ..executors import Iteration, HarmonizationResult
+from .executors import Iteration, HarmonizationResult
 
 
 def _strip_markdown_fences(text: str) -> str:
@@ -39,7 +44,7 @@ def _strip_markdown_fences(text: str) -> str:
     return text.strip()
 
 
-def create_orchestrator_agent_prompt_only(model: str = _DEFAULT_CLAUDE) -> Agent:
+def create_orchestrator_agent_prompt_only(model: str = _DEFAULT_GPT) -> Agent:
     instructions = """\
 You decide if a harmonization is good enough or needs revision.
 After reading the critique (and the ABC), output either:
@@ -56,7 +61,7 @@ Priority issues:
 
 Do not write ABC. Be stricter on wrong chords or broken notation; lenient on minor voice-leading on later attempts."""
 
-    return AnthropicClient(model=model).as_agent(
+    return OpenAIChatCompletionClient(model=model).as_agent(
         name="OrchestratorAgent",
         instructions=instructions,
     )
@@ -80,6 +85,8 @@ def create_harmonizer_agent_prompt_only(model: str = _DEFAULT_CLAUDE) -> Agent:
 You complete ABC templates: fill V:2 with block chords; never change V:1.
 Return only the full ABC text — no markdown fences, no commentary."""
 
+    # Harmonizer stays on Anthropic (Claude) — matches base/improved_prompt/chain_of_thought
+    # which set harmonizer_model="claude-sonnet-4-6" in their notebooks.
     return AnthropicClient(model=model).as_agent(
         name="HarmonizerAgent",
         instructions=instructions,

@@ -34,7 +34,11 @@ Usage:
 
 import re
 
-from .agents import create_orchestrator_agent, create_theory_agent, create_harmonizer_agent
+from .agents import (
+    create_orchestrator_agent_prompt_only as create_orchestrator_agent,
+    create_theory_agent_prompt_only as create_theory_agent,
+    create_harmonizer_agent_prompt_only as create_harmonizer_agent,
+)
 from .executors import Iteration, HarmonizationResult
 
 
@@ -52,7 +56,7 @@ async def harmonize_melody(
     verbose: bool = True,
     orchestrator_model: str = "gpt-4o",
     theory_model: str = "claude-sonnet-4-6",
-    harmonizer_model: str = "gpt-4o",
+    harmonizer_model: str = "claude-sonnet-4-6",
 ) -> HarmonizationResult:
     """Run the hub-and-spoke harmonization pipeline.
 
