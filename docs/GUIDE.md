@@ -54,7 +54,7 @@ mir_agentic_arrangement/
 │   ├── music_theory_context.py  # Open Music Theory textbook chapters as string constants
 │   ├── bach_melodies.py         # music21 corpus → ABC template pipeline
 │   ├── demo.ipynb               # Interactive notebook with audio playback
-│   └── GUIDE.md                 # Detailed guide for this module
+│   └── documentation/           # Architecture & metrics docs (see README.md inside)
 │
 ├── ComposerX/                   # Legacy multi-agent music generation (AutoGen-based)
 │   ├── music_generation/
@@ -84,9 +84,11 @@ mir_agentic_arrangement/
 │   └── soundfonts/              # SoundFont (.sf2) files for synthesis
 │
 ├── output/                      # Generated audio output
+├── docs/                        # Project-wide documentation
+│   ├── GUIDE.md                 # This file
+│   └── METRICS_DESIGN.md        # Design spec behind util/harmonization_metrics.py
 ├── requirements.txt             # Project dependencies
-├── README.md                    # Quick-start reference
-└── abc2midi_sonify_overview.md  # Design notes for abc_sonify module
+└── README.md                    # Quick-start reference
 ```
 
 ---
@@ -512,6 +514,7 @@ so that `import util` resolves correctly).
 | `abc_sonify_demo.ipynb` | Same demo using the legacy music21-based pipeline (`util.abc_sonify` + `util.midi_sonify`). Useful for comparing old vs new results. |
 | `midi_sonify_demo.ipynb` | Low-level MIDI demo: load a MIDI hymn, list instruments, select/trim, synthesize with sine-wave and SoundFont. Uses `util.midi_sonify`. |
 | `music21_exploratory.ipynb` | Exploratory analysis of MIDI hymns using music21 directly: parse parts, inspect notes, pitch distributions. |
+| `llm_benchmark.ipynb` | Ad-hoc LLM benchmark scratchpad. |
 
 **Import pattern used in all notebooks:**
 
@@ -533,7 +536,10 @@ using a **hub-and-spoke** architecture with iterative refinement. Given a Bach
 chorale soprano melody in ABC notation, the pipeline produces a two-voice score
 with a chord progression.
 
-> For the full walkthrough see [`basic_agent_framework/GUIDE.md`](basic_agent_framework/GUIDE.md).
+> For the full walkthrough see [`basic_agent_framework/documentation/`](../basic_agent_framework/documentation/README.md)
+> ([ARCHITECTURE](../basic_agent_framework/documentation/ARCHITECTURE.md),
+> [METRICS](../basic_agent_framework/documentation/METRICS.md)).
+> For the rationale behind the evaluation metrics, see [METRICS_DESIGN.md](METRICS_DESIGN.md).
 
 ### Hub-and-Spoke Architecture
 
